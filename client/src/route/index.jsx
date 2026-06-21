@@ -12,7 +12,7 @@ import Dashboard from "../layouts/Dashboard.jsx";
 import Profile from "../pages/Profile.jsx";
 import MyOrders from "../pages/MyOrders.jsx";
 import Address from "../pages/Address.jsx";
-import Categorypage from "../pages/Categorypage.jsx";
+import Categorypage from "../pages/CategoryPage.jsx";
 import SubCategoryPage from "../pages/SubCategoryPage.jsx";
 import UploadProduct from "../pages/UploadProduct.jsx";
 import ProductAdmin from "../pages/ProductAdmin.jsx";
