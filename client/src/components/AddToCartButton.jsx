@@ -5,8 +5,9 @@ import SummaryApi from "../common/SummaryApi";
 import toast from "react-hot-toast";
 import AxiosToastError from "../utils/AxiosToastError";
 import Loading from "./Loading";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { FaMinus, FaPlus } from "react-icons/fa6";
+import { addLocalCartItem, updateLocalCartItemQty, deleteLocalCartItem } from "../store/cartProduct";
 
 const AddToCartButton = ({ data }) => {
   const { fetchCartItem, updateCartItem, deleteCartItem } = useGlobalContext();
@@ -21,9 +22,18 @@ const AddToCartButton = ({ data }) => {
 
   const [cartItemDetails, setCartItemsDetails] = useState();
 
+  const user = useSelector((state) => state?.user);
+  const dispatch = useDispatch();
+
   const handleADDTocart = async (e) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (!user?._id) {
+       dispatch(addLocalCartItem(data));
+       toast.success("Item added to cart");
+       return;
+    }
 
     try {
       setLoading(true);
@@ -70,6 +80,12 @@ const AddToCartButton = ({ data }) => {
     e.preventDefault();
     e.stopPropagation();
 
+    if (!user?._id) {
+       dispatch(updateLocalCartItemQty({ id: cartItemDetails?.id, qty: qty + 1 }));
+       toast.success("Item added");
+       return;
+    }
+
     const response = await updateCartItem(cartItemDetails?.id, qty + 1);
 
     if (response?.success) {
@@ -80,6 +96,16 @@ const AddToCartButton = ({ data }) => {
   const decreaseQty = async (e) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (!user?._id) {
+       if (qty === 1) {
+          dispatch(deleteLocalCartItem(cartItemDetails?.id));
+       } else {
+          dispatch(updateLocalCartItemQty({ id: cartItemDetails?.id, qty: qty - 1 }));
+       }
+       toast.success("Item removed");
+       return;
+    }
 
     if (qty === 1) {
       deleteCartItem(cartItemDetails?.id);

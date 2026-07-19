@@ -24,8 +24,11 @@ const DisplayCartItem = ({close}) => {
                 close()
             }
             return
-        }
         toast("Please Login")
+        navigate("/login")
+        if(close){
+            close()
+        }
     }
   return (
     <section className='bg-neutral-900 fixed top-0 bottom-0 right-0 left-0 bg-opacity-70 z-50'>

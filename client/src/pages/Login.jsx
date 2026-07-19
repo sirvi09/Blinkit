@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 import Axios from "../utils/Axios.js";
 import SummaryApi from "../common/SummaryApi";
 import AxiosToastError from "../utils/AxiosToastError.js";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { setUserDetails } from "../store/userSlice";
 import fetchUserDetails from "../utils/fetchUserDetails.js";
 
@@ -19,6 +19,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const cartItem = useSelector((state) => state.cartItem.cart);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -48,6 +49,24 @@ const Login = () => {
 
       if (response.data.success) {
         toast.success(response.data.message);
+
+        // Sync local guest cart to backend
+        const localCartItems = cartItem.filter(item => String(item.id).startsWith('local-'));
+        if (localCartItems.length > 0) {
+           for (const item of localCartItems) {
+               const addRes = await Axios({
+                   ...SummaryApi.addToCart,
+                   data: { productId: item.productId.id }
+               });
+               
+               if (item.quantity > 1 && addRes?.data?.data?.id) {
+                   await Axios({
+                       ...SummaryApi.updateCartItemQty,
+                       data: { id: addRes.data.data.id, qty: item.quantity }
+                   });
+               }
+           }
+        }
 
         const userDetails = await fetchUserDetails();
         dispatch(setUserDetails(userDetails.data));
