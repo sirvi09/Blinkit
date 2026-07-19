@@ -8,8 +8,7 @@ const LoginPopup = () => {
 
     useEffect(() => {
         // Delay the popup so it doesn't appear immediately before auth is checked
-        const token = localStorage.getItem('accesstoken');
-        if (!token && !user._id) {
+        if (!user._id) {
             const timer = setTimeout(() => {
                 setShow(true);
             }, 3000); // Popup appears after 3 seconds for unlogged users
