@@ -14,6 +14,7 @@ import { handleAddItemCart } from './store/cartProduct'
 import GlobalProvider from './provider/GlobalProvider'
 import { FaCartShopping } from 'react-icons/fa6'
 import CartMobileLink from './components/CartMobile'
+import LoginPopup from './components/LoginPopup'
 
 function App() {
   const dispatch = useDispatch()
@@ -94,6 +95,7 @@ function App() {
       </main>
       <Footer/>
       <Toaster/>
+      <LoginPopup />
       <div className='sticky bottom-4 p-2'>
         <CartMobileLink />
        </div>
