@@ -18,6 +18,7 @@ import cartRouter from './route/cart.route.js'
 import addressRouter from './route/address.route.js'
 import orderRouter from './route/order.route.js'
 import dashboardRouter from './route/dashboard.route.js'
+import { webhookStripe } from './controllers/order.controller.js'
 
 const app = express()
 
@@ -42,6 +43,9 @@ app.use(cors({
     credentials : true ,
     origin: process.env.FRONTEND_URL
 }))
+
+// Stripe webhook needs raw body for signature verification
+app.post('/api/order/webhook', express.raw({ type: 'application/json' }), webhookStripe)
 
 app.use(express.json())
 app.use(cookieParser())

@@ -6,65 +6,44 @@ const Axios = axios.create({
   withCredentials: true,
 });
 
-//sending access token in the header
-Axios.interceptors.request.use(
-  async (config) => {
-    const accessToken = localStorage.getItem("accesstoken");
-
-    if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`;
-    }
-
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  },
-);
-
-///extended the life span of access token with
-//the help refresh
-
-Axios.interceptors.request.use(
+// Axios interceptor for handling 401 Unauthorized responses and refreshing the token automatically via HTTP-only cookies
+Axios.interceptors.response.use(
   (response) => {
     return response;
   },
-  async(error) => {
-    let originRequest = error.config
+  async (error) => {
+    let originRequest = error.config;
     
-    if (error.response.status === 401 && !originRequest.retry) {
+    // If the request fails with 401 and we haven't already retried it
+    if (error.response?.status === 401 && !originRequest.retry) {
       originRequest.retry = true;
 
-      const refreshToken = localStorage.getItem("refreshToken");
-
-      if (refreshToken) {
-        const newAccessToken = await refreshAccessToken(refreshToken);
-
+      try {
+        // Attempt to hit the refresh token endpoint.
+        // It uses HTTP-only cookies to validate the refresh token and sets a new access token cookie
+        const newAccessToken = await refreshAccessToken();
+        
         if (newAccessToken) {
-          originRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-          return Axios(originRequest);
+           return Axios(originRequest);
         }
+      } catch (err) {
+         return Promise.reject(err);
       }
     }
+    
     return Promise.reject(error);
-  },
+  }
 );
 
-const refreshAccessToken = async (refreshToken) => {
+const refreshAccessToken = async () => {
   try {
     const response = await Axios({
       ...SummaryApi.refreshToken,
-      headers: {
-        Authorization: `Bearer ${refreshToken}`,
-      },
     });
-    const accessToken = response.data.data.accessToken;
-
-    localStorage.setItem("accesstoken", accessToken);
-    return accessToken;
+    return response.data?.data?.accessToken;
   } catch (error) {
-    console.log(error);
-
+    console.error("Token refresh failed", error);
+    return null;
   }
 };
 

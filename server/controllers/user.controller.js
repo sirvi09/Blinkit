@@ -13,23 +13,31 @@ import uploadImageCloudinary from "../utils/uploadimageCloudinary.js";
 import generateOtp from "../utils/generatedOtp.js";
 import forgotPasswordTemplate from "../utils/forgotPasswordTemplate.js";
 import jwt from "jsonwebtoken";
-import { response } from "express";
+import { z } from "zod";
+
+const registerSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Invalid email format"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+const loginSchema = z.object({
+  email: z.string().email("Invalid email format"),
+  password: z.string().min(1, "Password is required"),
+});
 
 export async function registerUserController(req, res) {
   try {
-    console.log("Request received");
-    console.log(req.body);
-
-    const { name, email, password } = req.body || {};
-
-    if (!name || !email || !password) {
+    const parsed = registerSchema.safeParse(req.body || {});
+    if (!parsed.success) {
       return res.status(400).json({
-        message: "provide email, name , password",
+        message: parsed.error.errors[0].message,
         error: true,
         success: false,
       });
     }
 
+    const { name, email, password } = parsed.data;
     const user = await findUserByEmail(email);
 
     if (user) {
@@ -49,11 +57,12 @@ export async function registerUserController(req, res) {
       password: hashPassword,
     });
 
-    const VerifyEmailUrl = `${process.env.FRONTEND_URL}/verify-email?code=${newUser?.id}`;
+    const verificationToken = jwt.sign({ id: newUser.id }, process.env.SECRET_KEY_ACCESS_TOKEN, { expiresIn: '1d' });
+    const VerifyEmailUrl = `${process.env.FRONTEND_URL}/verify-email?code=${verificationToken}`;
 
     await sendEmail({
       sendTo: email,
-      subject: "verify email from winkit",
+      subject: "Verify email from Winkit",
       html: verifyEmailTemplate(name, VerifyEmailUrl),
     });
 
@@ -61,11 +70,16 @@ export async function registerUserController(req, res) {
       message: "User registered successfully",
       error: false,
       success: true,
-      data: newUser,
+      data: {
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email
+      }
     });
   } catch (error) {
+    console.error("Register Error:", error);
     return res.status(500).json({
-      message: error.message || error,
+      message: "Internal server error",
       error: true,
       success: false,
     });
@@ -75,19 +89,30 @@ export async function registerUserController(req, res) {
 export async function verifyEmailController(req, res) {
   try {
     const { code } = req.body || {};
+    if(!code) {
+        return res.status(400).json({ message: "Verification code required", error: true, success: false });
+    }
 
-    const user = await findUserById(code);
+    let userId;
+    try {
+        const decoded = jwt.verify(code, process.env.SECRET_KEY_ACCESS_TOKEN);
+        userId = decoded.id;
+    } catch(err) {
+        return res.status(400).json({ message: "Invalid or expired verification code", error: true, success: false });
+    }
+
+    const user = await findUserById(userId);
 
     if (!user) {
       return res.status(400).json({
-        message: "Invalid code",
+        message: "User not found",
         error: true,
         success: false,
       });
     }
 
     await pool.query("UPDATE users SET verify_email = true WHERE id = $1", [
-      code,
+      userId,
     ]);
 
     return res.json({
@@ -96,8 +121,9 @@ export async function verifyEmailController(req, res) {
       error: false,
     });
   } catch (error) {
+    console.error("Verify Email Error:", error);
     return res.status(500).json({
-      messsage: error.message || error,
+      message: "Internal server error",
       error: true,
       success: false,
     });
@@ -106,21 +132,21 @@ export async function verifyEmailController(req, res) {
 
 export async function loginController(req, res) {
   try {
-    const { email, password } = req.body || {};
-
-    if (!email || !password) {
+    const parsed = loginSchema.safeParse(req.body || {});
+    if (!parsed.success) {
       return res.status(400).json({
-        message: "provide email,password",
+        message: parsed.error.errors[0].message,
         error: true,
         success: false,
       });
     }
 
+    const { email, password } = parsed.data;
     const user = await findUserByEmail(email);
 
     if (!user) {
       return res.status(400).json({
-        message: "User not register",
+        message: "User not registered",
         error: true,
         success: false,
       });
@@ -128,7 +154,7 @@ export async function loginController(req, res) {
 
     if (user.status !== "Active") {
       return res.status(400).json({
-        message: "Contact to Admin ",
+        message: "Account inactive, please contact Admin",
         error: true,
         success: false,
       });
@@ -138,7 +164,7 @@ export async function loginController(req, res) {
 
     if (!checkpassword) {
       return res.status(400).json({
-        message: "Check your password",
+        message: "Invalid credentials",
         error: true,
         success: false,
       });
@@ -166,8 +192,9 @@ export async function loginController(req, res) {
       },
     });
   } catch (error) {
+    console.error("Login Error:", error);
     return res.status(500).json({
-      message: error.message || error,
+      message: "Internal server error",
       error: true,
       success: false,
     });
@@ -199,8 +226,9 @@ export async function logoutController(req, res) {
       success: true,
     });
   } catch (error) {
+    console.error("Logout Error:", error);
     return res.status(500).json({
-      message: error.message || error,
+      message: "Internal server error",
       error: true,
       success: false,
     });
@@ -237,8 +265,9 @@ export async function uploadAvatar(req, res) {
       error: false,
     });
   } catch (error) {
+    console.error("Upload Avatar Error:", error);
     return res.status(500).json({
-      message: error.message || error,
+      message: "Internal server error",
       error: true,
       success: false,
     });
@@ -247,7 +276,7 @@ export async function uploadAvatar(req, res) {
 
 export async function updateUserDetails(req, res) {
   try {
-    const userId = req.userId; //auth middleware
+    const userId = req.userId; 
     const { name, email, mobile, password } = req.body;
 
     let hashPassword = "";
@@ -275,8 +304,9 @@ export async function updateUserDetails(req, res) {
       success: true,
     });
   } catch (error) {
+    console.error("Update User Error:", error);
     return res.status(500).json({
-      message: error.message || error,
+      message: "Internal server error",
       error: true,
       success: false,
     });
@@ -323,8 +353,9 @@ export async function forgetPasswordController(req, res) {
       success: true,
     });
   } catch (error) {
+    console.error("Forgot Password Error:", error);
     return res.status(500).json({
-      message: error.message || error,
+      message: "Internal server error",
       error: true,
       success: false,
     });
@@ -385,8 +416,9 @@ export async function verifyForgetPasswordOtp(req, res) {
       success: true,
     });
   } catch (error) {
+    console.error("Verify OTP Error:", error);
     return res.status(500).json({
-      message: error.message || error,
+      message: "Internal server error",
       error: true,
       success: false,
     });
@@ -442,8 +474,9 @@ export async function resetpassword(req, res) {
       success: true,
     });
   } catch (error) {
+    console.error("Reset Password Error:", error);
     return res.status(500).json({
-      message: error.message || error,
+      message: "Internal server error",
       error: true,
       success: false,
     });
@@ -485,8 +518,6 @@ export async function refreshToken(req, res) {
 
     res.cookie("accessToken", newAccessToken, cookiesOption);
 
-    console.log("refresh token route hit");
-    console.log("refresh route loaded");
     return res.json({
       message: "New Access token generated",
       error: false,
@@ -496,8 +527,9 @@ export async function refreshToken(req, res) {
       },
     });
   } catch (error) {
+    console.error("Refresh Token Error:", error);
     return res.status(500).json({
-      message: error.message || error,
+      message: "Internal server error",
       error: true,
       success: false,
     });
@@ -509,7 +541,7 @@ export async function userDetails(req, res) {
     const userId = req.userId;
 
     const result = await pool.query(
-       `SELECT * FROM users WHERE id = $1`,
+       `SELECT id, name, email, avatar, mobile, verify_email, last_login_date, status, role FROM users WHERE id = $1`,
       [userId],
     );
 
@@ -530,8 +562,9 @@ export async function userDetails(req, res) {
       success: true,
     });
   } catch (error) {
+    console.error("User Details Error:", error);
     return res.status(500).json({
-      message: "Something is wrong",
+      message: "Internal server error",
       error: true,
       success: false,
     });

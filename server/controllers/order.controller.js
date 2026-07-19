@@ -1,92 +1,120 @@
 import Stripe from "../config/stripe.js";
 import { pool } from "../config/connectDB.js";
-import { createOrder, getOrdersByUser } from "../models/order.model.js";
+import { getOrdersByUser } from "../models/order.model.js";
 import { io } from "../index.js";
 import { findUserById } from "../models/user.model.js";
+import { getProductById } from "../models/product.model.js";
+
+export const pricewithDiscount = (price, dis = 1) => {
+  const discountAmount = Math.ceil((Number(price) * Number(dis)) / 100);
+  return Number(price) - discountAmount;
+};
 
 export async function CashOnDeliveryOrderController(req, res) {
+  const client = await pool.connect();
   try {
     const userId = req.userId;
+    const { list_items, addressId } = req.body;
 
-    const { list_items, totalAmt, addressId, subTotalAmt } = req.body;
+    if (!list_items || !addressId) {
+      return res.status(400).json({ message: "Invalid request", error: true, success: false });
+    }
+
+    await client.query('BEGIN');
 
     const orders = [];
 
     for (const item of list_items) {
-      const order = await createOrder({
-        user_id: userId,
-        order_id: `ORD-${Date.now()}-${item.productId.id}`,
-        product_id: item.productId.id,
-        product_details: JSON.stringify({
-          name: item.productId.name,
-          image: item.productId.image,
-        }),
-        payment_id: "",
-        payment_status: "CASH ON DELIVERY",
-        delivery_address: addressId,
-        subtotal_amt: subTotalAmt,
-        total_amt: totalAmt,
-        invoice_receipt: "",
-      });
+      const product = await getProductById(item.productId.id);
+      if(!product) {
+          throw new Error(`Product not found: ${item.productId.id}`);
+      }
 
-      orders.push(order);
+      const itemPrice = pricewithDiscount(product.price, product.discount);
+      const itemSubtotal = itemPrice * item.quantity;
+
+      const orderQuery = `
+        INSERT INTO orders (user_id, order_id, product_id, product_details, payment_id, payment_status, delivery_address, subtotal_amt, total_amt, invoice_receipt)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        RETURNING *
+      `;
+      const orderValues = [
+        userId,
+        `ORD-${Date.now()}-${product.id}`,
+        product.id,
+        JSON.stringify({ name: product.name, image: product.image }),
+        "",
+        "CASH ON DELIVERY",
+        addressId,
+        itemSubtotal,
+        itemSubtotal,
+        ""
+      ];
+      
+      const resOrder = await client.query(orderQuery, orderValues);
+      orders.push(resOrder.rows[0]);
     }
 
     // clear cart
-    await pool.query("DELETE FROM cart_items WHERE user_id = $1", [userId]);
+    await client.query("DELETE FROM cart_items WHERE user_id = $1", [userId]);
+    await client.query('COMMIT');
+
     io.emit("dashboard-updated");
 
     return res.json({
-      message: "Order successfully",
+      message: "Order successfully placed",
       error: false,
       success: true,
       data: orders,
     });
   } catch (error) {
+    await client.query('ROLLBACK');
+    console.error("COD error:", error);
     return res.status(500).json({
-      message: error.message || error,
+      message: "Order failed to process",
       error: true,
       success: false,
     });
+  } finally {
+    client.release();
   }
 }
-export const pricewithDiscount = (price, dis = 1) => {
-  const discountAmount = Math.ceil((Number(price) * Number(dis)) / 100);
 
-  const actualPrice = Number(price) - discountAmount;
 
-  return actualPrice;
-};
 export async function paymentController(req, res) {
   try {
     const userId = req.userId;
-
-    const { list_items, totalAmt, addressId, subTotalAmt } = req.body;
+    const { list_items, addressId } = req.body;
 
     const user = await findUserById(userId);
+    if (!user) {
+        return res.status(404).json({ message: "User not found", error: true, success: false });
+    }
 
-    const line_items = list_items.map((item) => {
-      return {
+    const line_items = [];
+    for (const item of list_items) {
+      const product = await getProductById(item.productId.id);
+      if(!product) continue;
+      
+      line_items.push({
         price_data: {
           currency: "inr",
           product_data: {
-            name: item.productId.name,
-            images: item.productId.image,
+            name: product.name,
+            images: Array.isArray(product.image) ? product.image.slice(0, 1) : [],
             metadata: {
-              productId: item.productId.id,
+              productId: product.id,
             },
           },
-          unit_amount:
-            pricewithDiscount(item.productId.price, item.productId.discount) *
-            100,
+          unit_amount: pricewithDiscount(product.price, product.discount) * 100,
         },
         adjustable_quantity: {
           enabled: true,
           minimum: 1,
         },
         quantity: item.quantity,
-      };
-    });
+      });
+    }
 
     const params = {
       submit_type: "pay",
@@ -106,13 +134,15 @@ export async function paymentController(req, res) {
 
     return res.status(200).json(session);
   } catch (error) {
+    console.error("Payment setup error:", error);
     return res.status(500).json({
-      message: error.message || error,
+      message: "Failed to initialize payment",
       error: true,
       success: false,
     });
   }
 }
+
 const getOrderProductItems = async ({
   lineItems,
   userId,
@@ -128,26 +158,17 @@ const getOrderProductItems = async ({
 
       const payload = {
         user_id: userId,
-
         order_id: `ORD-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
-
         product_id: Number(product.metadata.productId),
-
         product_details: JSON.stringify({
           name: product.name,
           image: product.images,
         }),
-
         payment_id: paymentId,
-
         payment_status: payment_status,
-
         delivery_address: Number(addressId),
-
         subtotal_amt: Number(item.amount_total / 100),
-
         total_amt: Number(item.amount_total / 100),
-
         invoice_receipt: "",
       };
 
@@ -157,69 +178,72 @@ const getOrderProductItems = async ({
 
   return productList;
 };
+
+
 export async function webhookStripe(req, res) {
+  const sig = req.headers['stripe-signature'];
+  let event;
+
   try {
-    const event = req.body;
+    event = Stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+  } catch (err) {
+    console.error(`Webhook Error: ${err.message}`);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
 
-    console.log("event", event);
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object;
+    
+    const client = await pool.connect();
+    try {
+      const lineItems = await Stripe.checkout.sessions.listLineItems(session.id);
+      const userId = Number(session.metadata.userId);
+      const addressId = Number(session.metadata.addressId);
 
-    switch (event.type) {
-      case "checkout.session.completed": {
-        const session = event.data.object;
+      const orderProducts = await getOrderProductItems({
+        lineItems,
+        userId,
+        addressId,
+        paymentId: session.payment_intent,
+        payment_status: session.payment_status,
+      });
 
-        const lineItems = await Stripe.checkout.sessions.listLineItems(
-          session.id,
-        );
+      await client.query('BEGIN');
+      const createdOrders = [];
 
-        const userId = Number(session.metadata.userId);
-        const addressId = Number(session.metadata.addressId);
-
-        const orderProducts = await getOrderProductItems({
-          lineItems,
-          userId,
-          addressId,
-          paymentId: session.payment_intent,
-          payment_status: session.payment_status,
-        });
-
-        const createdOrders = [];
-
-        for (const item of orderProducts) {
-          const order = await createOrder(item);
-          createdOrders.push(order);
-        }
-
-        if (createdOrders.length > 0) {
-          await pool.query("DELETE FROM cart_items WHERE user_id = $1", [
-            userId,
-          ]);
-        }
-        io.emit("dashboard-updated");
-        console.log("dashboard-updated emitted");
-        break;
+      for (const item of orderProducts) {
+        const orderQuery = `
+          INSERT INTO orders (user_id, order_id, product_id, product_details, payment_id, payment_status, delivery_address, subtotal_amt, total_amt, invoice_receipt)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          RETURNING *
+        `;
+        const orderValues = [item.user_id, item.order_id, item.product_id, item.product_details, item.payment_id, item.payment_status, item.delivery_address, item.subtotal_amt, item.total_amt, item.invoice_receipt];
+        const resOrder = await client.query(orderQuery, orderValues);
+        createdOrders.push(resOrder.rows[0]);
       }
 
-      default:
-        console.log(`Unhandled event type ${event.type}`);
+      if (createdOrders.length > 0) {
+        await client.query("DELETE FROM cart_items WHERE user_id = $1", [userId]);
+      }
+      
+      await client.query('COMMIT');
+      io.emit("dashboard-updated");
+      console.log("Stripe order processed successfully");
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error("Webhook transaction failed:", error);
+    } finally {
+      client.release();
     }
-
-    return res.json({
-      received: true,
-    });
-  } catch (error) {
-    console.log(error);
-
-    return res.status(500).json({
-      message: error.message || error,
-      error: true,
-      success: false,
-    });
   }
+
+  return res.json({ received: true });
 }
+
+
 export async function getOrderDetailsController(req, res) {
   try {
     const userId = req.userId;
-
     const orderList = await getOrdersByUser(userId);
 
     return res.json({
@@ -229,8 +253,9 @@ export async function getOrderDetailsController(req, res) {
       success: true,
     });
   } catch (error) {
+    console.error("Order details error:", error);
     return res.status(500).json({
-      message: error.message || error,
+      message: "Internal server error",
       error: true,
       success: false,
     });
