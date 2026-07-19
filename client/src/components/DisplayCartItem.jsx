@@ -24,6 +24,7 @@ const DisplayCartItem = ({close}) => {
                 close()
             }
             return
+        }
         toast("Please Login")
         navigate("/login")
         if(close){
