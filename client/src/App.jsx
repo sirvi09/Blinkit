@@ -84,7 +84,7 @@ function App() {
     fetchCategory();
     fetchSubCategory();
     fetchCartItem();
-  }, [location.pathname]);
+  }, []);
 
   return (
     <GlobalProvider>

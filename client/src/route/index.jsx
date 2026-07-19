@@ -1,28 +1,39 @@
 import { createBrowserRouter } from "react-router-dom";
+import React, { Suspense, lazy } from "react";
 import App from "../App";
-import Home from "../pages/Home.jsx";
-import SearchPage from "../pages/SearchPage.jsx";
-import Login from "../pages/Login.jsx";
-import Register from "../pages/Register.jsx";
-import ForgotPassword from "../pages/ForgotPassword.jsx";
-import OtpVerification from "../pages/OtpVerification.jsx";
-import ResetPassword from "../pages/ResetPassword.jsx";
-import UserMenuMobile from "../pages/UserMenuMobile.jsx";
-import Dashboard from "../layouts/Dashboard.jsx";
-import Profile from "../pages/Profile.jsx";
-import MyOrders from "../pages/MyOrders.jsx";
-import Address from "../pages/Address.jsx";
-import Categorypage from "../pages/CategoryPage.jsx";
-import SubCategoryPage from "../pages/SubCategoryPage.jsx";
-import UploadProduct from "../pages/UploadProduct.jsx";
-import ProductAdmin from "../pages/ProductAdmin.jsx";
-import AdminPermission from "../layouts/AdminPermission.jsx";
-import ProductListPage from "../pages/ProductListPage.jsx";
-import ProductDisplayPage from "../pages/ProductDisplayPage.jsx";
-import CartMobile from "../pages/CartMobile.jsx";
-import CheckoutPage from "../pages/CheckoutPage.jsx";
-import Success from "../pages/Success.jsx";
-import Cancel from "../pages/Cancel.jsx";
+
+// Lazy loading all pages for better performance
+const Home = lazy(() => import("../pages/Home.jsx"));
+const SearchPage = lazy(() => import("../pages/SearchPage.jsx"));
+const Login = lazy(() => import("../pages/Login.jsx"));
+const Register = lazy(() => import("../pages/Register.jsx"));
+const ForgotPassword = lazy(() => import("../pages/ForgotPassword.jsx"));
+const OtpVerification = lazy(() => import("../pages/OtpVerification.jsx"));
+const ResetPassword = lazy(() => import("../pages/ResetPassword.jsx"));
+const UserMenuMobile = lazy(() => import("../pages/UserMenuMobile.jsx"));
+const Dashboard = lazy(() => import("../layouts/Dashboard.jsx"));
+const Profile = lazy(() => import("../pages/Profile.jsx"));
+const MyOrders = lazy(() => import("../pages/MyOrders.jsx"));
+const Address = lazy(() => import("../pages/Address.jsx"));
+const Categorypage = lazy(() => import("../pages/CategoryPage.jsx"));
+const SubCategoryPage = lazy(() => import("../pages/SubCategoryPage.jsx"));
+const UploadProduct = lazy(() => import("../pages/UploadProduct.jsx"));
+const ProductAdmin = lazy(() => import("../pages/ProductAdmin.jsx"));
+const AdminPermission = lazy(() => import("../layouts/AdminPermission.jsx"));
+const ProductListPage = lazy(() => import("../pages/ProductListPage.jsx"));
+const ProductDisplayPage = lazy(() => import("../pages/ProductDisplayPage.jsx"));
+const CartMobile = lazy(() => import("../pages/CartMobile.jsx"));
+const CheckoutPage = lazy(() => import("../pages/CheckoutPage.jsx"));
+const Success = lazy(() => import("../pages/Success.jsx"));
+const Cancel = lazy(() => import("../pages/Cancel.jsx"));
+const AdminDashboard = lazy(() => import("../pages/AdminDashBoard.jsx"));
+
+// eslint-disable-next-line react-refresh/only-export-components
+const SuspenseWrapper = ({ children }) => (
+  <Suspense fallback={<div className="flex justify-center items-center h-screen"><p>Loading...</p></div>}>
+    {children}
+  </Suspense>
+);
 
 const router = createBrowserRouter([
   {
@@ -31,107 +42,125 @@ const router = createBrowserRouter([
     children: [
       {
         path: "/",
-        element: <Home />,
+        element: <SuspenseWrapper><Home /></SuspenseWrapper>,
       },
       {
         path: "search",
-        element: <SearchPage />,
+        element: <SuspenseWrapper><SearchPage /></SuspenseWrapper>,
       },
       {
         path: "login",
-        element: <Login />,
+        element: <SuspenseWrapper><Login /></SuspenseWrapper>,
       },
       {
         path: "register",
-        element: <Register />,
+        element: <SuspenseWrapper><Register /></SuspenseWrapper>,
       },
       {
         path: "forgot-password",
-        element: <ForgotPassword />,
+        element: <SuspenseWrapper><ForgotPassword /></SuspenseWrapper>,
       },
       {
         path: "verification-otp",
-        element: <OtpVerification />,
+        element: <SuspenseWrapper><OtpVerification /></SuspenseWrapper>,
       },
       {
         path: "reset-password",
-        element: <ResetPassword />,
+        element: <SuspenseWrapper><ResetPassword /></SuspenseWrapper>,
       },
       {
         path: "user",
-        element: <UserMenuMobile />,
+        element: <SuspenseWrapper><UserMenuMobile /></SuspenseWrapper>,
       },
       {
         path: "/:category/:subcategory",
-        element: <ProductListPage />,
+        element: <SuspenseWrapper><ProductListPage /></SuspenseWrapper>,
       },
       {
         path: "product/:product",
-        element: <ProductDisplayPage />,
+        element: <SuspenseWrapper><ProductDisplayPage /></SuspenseWrapper>,
       },
       {
         path: "cart",
-        element: <CartMobile />,
+        element: <SuspenseWrapper><CartMobile /></SuspenseWrapper>,
       },
       {
         path: "checkout",
-        element: <CheckoutPage />,
+        element: <SuspenseWrapper><CheckoutPage /></SuspenseWrapper>,
       },
       {
         path: "success",
-        element: <Success/>,
+        element: <SuspenseWrapper><Success /></SuspenseWrapper>,
       },
       {
         path: "cancel",
-        element: <Cancel />,
+        element: <SuspenseWrapper><Cancel /></SuspenseWrapper>,
       },
 
       {
         path: "dashboard",
-        element: <Dashboard />,
+        element: <SuspenseWrapper><Dashboard /></SuspenseWrapper>,
         children: [
           {
             path: "profile",
-            element: <Profile />,
+            element: <SuspenseWrapper><Profile /></SuspenseWrapper>,
           },
           {
             path: "myorders",
-            element: <MyOrders />,
+            element: <SuspenseWrapper><MyOrders /></SuspenseWrapper>,
           },
           {
             path: "address",
-            element: <Address />,
+            element: <SuspenseWrapper><Address /></SuspenseWrapper>,
           },
           {
             path: "category",
             element: (
-              <AdminPermission>
-                <Categorypage />
-              </AdminPermission>
+              <SuspenseWrapper>
+                <AdminPermission>
+                  <Categorypage />
+                </AdminPermission>
+              </SuspenseWrapper>
             ),
           },
           {
             path: "subcategory",
             element: (
-              <AdminPermission>
-                <SubCategoryPage />
-              </AdminPermission>
+              <SuspenseWrapper>
+                <AdminPermission>
+                  <SubCategoryPage />
+                </AdminPermission>
+              </SuspenseWrapper>
             ),
           },
           {
             path: "upload-product",
             element: (
-              <AdminPermission>
-                <UploadProduct />
-              </AdminPermission>
+              <SuspenseWrapper>
+                <AdminPermission>
+                  <UploadProduct />
+                </AdminPermission>
+              </SuspenseWrapper>
             ),
           },
           {
             path: "product",
             element: (
-              <AdminPermission>
-                <ProductAdmin />
-              </AdminPermission>
+              <SuspenseWrapper>
+                <AdminPermission>
+                  <ProductAdmin />
+                </AdminPermission>
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            index: true,
+            element: (
+              <SuspenseWrapper>
+                <AdminPermission>
+                  <AdminDashboard />
+                </AdminPermission>
+              </SuspenseWrapper>
             ),
           },
         ],

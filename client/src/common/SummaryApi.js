@@ -1,5 +1,5 @@
-export const baseURL = import.meta.env.VITE_API_URL;
-
+export const baseURL = "http://localhost:5000";
+console.log("BASE URL =", baseURL);
 const SummaryApi = {
   register: {
     url: "/api/user/register",
@@ -151,6 +151,10 @@ const SummaryApi = {
   },
   getOrderItems: {
     url: "/api/order/order-list",
+    method: "get",
+  },
+  dashboardStats: {
+    url: "/api/dashboard/stats",
     method: "get",
   },
 };

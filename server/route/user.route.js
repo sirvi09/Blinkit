@@ -1,19 +1,28 @@
 import {Router } from 'express'
+import rateLimit from 'express-rate-limit'
 import { forgetPasswordController, loginController, logoutController, refreshToken, registerUserController, resetpassword, updateUserDetails, uploadAvatar, userDetails, verifyEmailController, verifyForgetPasswordOtp } from '../controllers/user.controller.js'
 import auth from '../middleware/auth.js'
 import upload from '../middleware/multer.js'
 
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Limit each IP to 10 requests per windowMs
+  message: "Too many attempts from this IP, please try again after 15 minutes",
+  standardHeaders: true,
+  legacyHeaders: false,
+})
+
 const userRouter = Router()
 
-userRouter.post('/register', registerUserController)
+userRouter.post('/register', authLimiter, registerUserController)
 userRouter.post('/verify-email',verifyEmailController)
-userRouter.post('/login',loginController)
+userRouter.post('/login', authLimiter, loginController)
 userRouter.get('/logout',auth,logoutController)
 userRouter.put('/upload-avatar',auth,upload.single('avatar'),uploadAvatar)
 userRouter.put('/update-user',auth,updateUserDetails)
-userRouter.put('/forgot-password',forgetPasswordController)
+userRouter.put('/forgot-password', authLimiter, forgetPasswordController)
 userRouter.put('/verify-forget-password',verifyForgetPasswordOtp)
-userRouter.put('/reset-password',resetpassword)
+userRouter.put('/reset-password', authLimiter, resetpassword)
 userRouter.post('/refresh-token',refreshToken)
 userRouter.get('/user-details',auth,userDetails)
 

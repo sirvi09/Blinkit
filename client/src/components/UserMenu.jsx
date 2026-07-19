@@ -65,16 +65,15 @@ const UserMenu = ({ close }) => {
 
       <Divider />
       <div className="text-sm grid gap-2">
-        {user.role ===
-          "ADMIN" && (
-            <Link
-              onClick={handleClose}
-              to={"/dashboard/category"}
-              className="px-2 hover:bg-orange-200 py-1"
-            >
-              Category
-            </Link>
-          )}
+        {user.role === "ADMIN" && (
+          <Link
+            onClick={handleClose}
+            to={"/dashboard/category"}
+            className="px-2 hover:bg-orange-200 py-1"
+          >
+            Category
+          </Link>
+        )}
 
         {user.role === "ADMIN" && (
           <Link
@@ -86,27 +85,25 @@ const UserMenu = ({ close }) => {
           </Link>
         )}
 
-        {user.role ===
-          "ADMIN"&&(
-            <Link
-              onClick={handleClose}
-              to={"/dashboard/upload-product"}
-              className="px-2 hover:bg-orange-200 py-1"
-            >
-              Upload Product
-            </Link>
-          )}
+        {user.role === "ADMIN" && (
+          <Link
+            onClick={handleClose}
+            to={"/dashboard/upload-product"}
+            className="px-2 hover:bg-orange-200 py-1"
+          >
+            Upload Product
+          </Link>
+        )}
 
-          {user.role ===
-          "ADMIN"&&(
-            <Link
-              onClick={handleClose}
-              to={"/dashboard/product"}
-              className="px-2 hover:bg-orange-200 py-1"
-            >
-               Products
-            </Link>
-          )}
+        {user.role === "ADMIN" && (
+          <Link
+            onClick={handleClose}
+            to={"/dashboard/product"}
+            className="px-2 hover:bg-orange-200 py-1"
+          >
+            Products
+          </Link>
+        )}
         <Link
           onClick={handleClose}
           to={"/dashboard/myorders"}
@@ -122,7 +119,12 @@ const UserMenu = ({ close }) => {
         >
           Save Address
         </Link>
-
+        <Link
+          to="/dashboard"
+          className="px-2 hover:bg-orange-200 py-1"
+        >
+          Dashboard
+        </Link>
         <button
           onClick={handleLogout}
           className="text-left px-2 hover:bg-orange-200 py-1"

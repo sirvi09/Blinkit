@@ -1,6 +1,7 @@
 import Stripe from "../config/stripe.js";
 import { pool } from "../config/connectDB.js";
 import { createOrder, getOrdersByUser } from "../models/order.model.js";
+import { io } from "../index.js";
 import { findUserById } from "../models/user.model.js";
 
 export async function CashOnDeliveryOrderController(req, res) {
@@ -33,6 +34,7 @@ export async function CashOnDeliveryOrderController(req, res) {
 
     // clear cart
     await pool.query("DELETE FROM cart_items WHERE user_id = $1", [userId]);
+    io.emit("dashboard-updated");
 
     return res.json({
       message: "Order successfully",
@@ -192,7 +194,8 @@ export async function webhookStripe(req, res) {
             userId,
           ]);
         }
-
+        io.emit("dashboard-updated");
+        console.log("dashboard-updated emitted");
         break;
       }
 
