@@ -81,7 +81,7 @@ const Login = () => {
           email: "",
           password: "",
         });
-        window.location.href = "/";
+        navigate("/");
       }
     } catch (error) {
       AxiosToastError(error);
