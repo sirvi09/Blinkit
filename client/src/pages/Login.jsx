@@ -50,22 +50,26 @@ const Login = () => {
       if (response.data.success) {
         toast.success(response.data.message);
 
-        // Sync local guest cart to backend
-        const localCartItems = cartItem.filter(item => String(item.id).startsWith('local-'));
-        if (localCartItems.length > 0) {
-           for (const item of localCartItems) {
-               const addRes = await Axios({
-                   ...SummaryApi.addToCart,
-                   data: { productId: item.productId.id }
-               });
-               
-               if (item.quantity > 1 && addRes?.data?.data?.id) {
-                   await Axios({
-                       ...SummaryApi.updateCartItemQty,
-                       data: { id: addRes.data.data.id, qty: item.quantity }
+        // Sync local guest cart to backend (wrapped in try/catch so it doesn't block login if it fails)
+        try {
+            const localCartItems = cartItem.filter(item => String(item.id).startsWith('local-'));
+            if (localCartItems.length > 0) {
+               for (const item of localCartItems) {
+                   const addRes = await Axios({
+                       ...SummaryApi.addToCart,
+                       data: { productId: item.productId.id }
                    });
+                   
+                   if (item.quantity > 1 && addRes?.data?.data?.id) {
+                       await Axios({
+                           ...SummaryApi.updateCartItemQty,
+                           data: { id: addRes.data.data.id, qty: item.quantity }
+                       });
+                   }
                }
-           }
+            }
+        } catch (syncError) {
+            console.error("Cart sync failed during login:", syncError);
         }
 
         const userDetails = await fetchUserDetails();

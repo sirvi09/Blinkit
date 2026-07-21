@@ -23,6 +23,7 @@ import dashboardRouter from './route/dashboard.route.js'
 import { webhookStripe } from './controllers/order.controller.js'
 
 const app = express()
+app.set('trust proxy', 1) // Trust the first proxy (Render/Vercel) so rate limiting uses the real client IP
 
 const httpServer = createServer(app);
 
@@ -59,7 +60,7 @@ app.use(compression())
 
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 1000, // Limit each IP to 1000 requests per windowMs
+    max: 5000, // Increased limit
     standardHeaders: true, 
     legacyHeaders: false, 
     message: {
