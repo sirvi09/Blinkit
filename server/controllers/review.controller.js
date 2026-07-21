@@ -38,8 +38,9 @@ export const addReviewController = async (req, res) => {
       success: true,
     });
   } catch (error) {
+    console.error("Add Review Error:", error);
     return res.status(500).json({
-      message: error.message || error,
+      message: "Internal server error",
       error: true,
       success: false,
     });
@@ -51,7 +52,7 @@ export const getProductReviewsController = async (req, res) => {
     const { productId } = req.params;
 
     const query = `
-      SELECT r.id, r.rating, r.comment, r.created_at, u.name, u.avatar
+      SELECT r.id, r.user_id, r.rating, r.comment, r.created_at, u.name, u.avatar
       FROM reviews r
       JOIN users u ON u.id = r.user_id
       WHERE r.product_id = $1
@@ -65,8 +66,9 @@ export const getProductReviewsController = async (req, res) => {
       success: true,
     });
   } catch (error) {
+    console.error("Get Reviews Error:", error);
     return res.status(500).json({
-      message: error.message || error,
+      message: "Internal server error",
       error: true,
       success: false,
     });
