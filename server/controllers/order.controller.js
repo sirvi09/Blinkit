@@ -25,9 +25,10 @@ export async function CashOnDeliveryOrderController(req, res) {
     const orders = [];
 
     for (const item of list_items) {
-      const product = await getProductById(item.productId.id);
+      const productId = item?.productId?.id || item?.productId?._id || item?.productId || item?.product_id;
+      const product = await getProductById(productId);
       if(!product) {
-          throw new Error(`Product not found: ${item.productId.id}`);
+          throw new Error(`Product not found: ${productId}`);
       }
 
       const itemPrice = pricewithDiscount(product.price, product.discount);
@@ -69,9 +70,9 @@ export async function CashOnDeliveryOrderController(req, res) {
     });
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error("COD error:", error);
+    console.error("COD error:", error, error.stack);
     return res.status(500).json({
-      message: "Order failed to process",
+      message: error.message || "Order failed to process",
       error: true,
       success: false,
     });
@@ -93,7 +94,8 @@ export async function paymentController(req, res) {
 
     const line_items = [];
     for (const item of list_items) {
-      const product = await getProductById(item.productId.id);
+      const productId = item?.productId?.id || item?.productId?._id || item?.productId || item?.product_id;
+      const product = await getProductById(productId);
       if(!product) continue;
       
       line_items.push({
@@ -134,9 +136,9 @@ export async function paymentController(req, res) {
 
     return res.status(200).json(session);
   } catch (error) {
-    console.error("Payment setup error:", error);
+    console.error("Payment setup error:", error, error.stack);
     return res.status(500).json({
-      message: "Failed to initialize payment",
+      message: error.message || "Failed to initialize payment",
       error: true,
       success: false,
     });
