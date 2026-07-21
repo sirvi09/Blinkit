@@ -73,7 +73,9 @@ const Login = () => {
         }
 
         const userDetails = await fetchUserDetails();
-        dispatch(setUserDetails(userDetails.data));
+        if (userDetails && userDetails.data) {
+            dispatch(setUserDetails(userDetails.data));
+        }
 
         setData({
           email: "",
