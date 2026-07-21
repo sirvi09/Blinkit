@@ -14,13 +14,15 @@ Axios.interceptors.response.use(
   async (error) => {
     let originRequest = error.config;
     
-    // If the request fails with 401 and we haven't already retried it
     if (error.response?.status === 401 && !originRequest.retry) {
       originRequest.retry = true;
 
+      if (originRequest.url === SummaryApi.refreshToken.url) {
+        return Promise.reject(error);
+      }
+
       try {
         // Attempt to hit the refresh token endpoint.
-        // It uses HTTP-only cookies to validate the refresh token and sets a new access token cookie
         const newAccessToken = await refreshAccessToken();
         
         if (newAccessToken) {
@@ -37,8 +39,10 @@ Axios.interceptors.response.use(
 
 const refreshAccessToken = async () => {
   try {
-    const response = await Axios({
+    const response = await axios({
       ...SummaryApi.refreshToken,
+      baseURL: baseURL,
+      withCredentials: true
     });
     return response.data?.data?.accessToken;
   } catch (error) {
