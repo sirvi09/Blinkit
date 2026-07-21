@@ -8,9 +8,11 @@ import { DisplayPriceInRupees } from '../utils/DisplayPriceInRupees'
 import Divider from '../components/Divider'
 import image1 from '../assets/minute_delivery.png'
 import image2 from '../assets/Best_Prices_Offers.png'
-import image3 from '../assets/Wide_Assortment.png'
+import image3 from '../assets/Wide_Assortment.webp'
 import { pricewithDiscount } from '../utils/PriceWithDiscount'
 import AddToCartButton from '../components/AddToCartButton'
+import { Helmet } from 'react-helmet-async'
+import ProductReviews from '../components/ProductReviews'
 
 const ProductDisplayPage = () => {
   const params = useParams()
@@ -57,7 +59,14 @@ const ProductDisplayPage = () => {
   
   console.log("product data",data)
   return (
-    <section className='container mx-auto p-4 grid lg:grid-cols-2 '>
+    <>
+      <Helmet>
+        <title>{data.name ? `${data.name} | Winkit` : 'Product | Winkit'}</title>
+        <meta name="description" content={data.description || 'Shop for groceries instantly.'} />
+        <meta property="og:title" content={data.name ? `${data.name} | Winkit` : 'Product | Winkit'} />
+        {data.image && data.image[0] && <meta property="og:image" content={data.image[0]} />}
+      </Helmet>
+      <section className='container mx-auto p-4 grid lg:grid-cols-2 '>
         <div className=''>
             <div className='bg-white lg:min-h-[65vh] lg:max-h-[65vh] rounded min-h-56 max-h-56 h-full w-full'>
                 <img
@@ -225,6 +234,11 @@ const ProductDisplayPage = () => {
             </div>
         </div>
     </section>
+    
+    <section className='container mx-auto p-4'>
+        <ProductReviews productId={productId} />
+    </section>
+    </>
   )
 }
 

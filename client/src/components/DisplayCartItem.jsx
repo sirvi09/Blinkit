@@ -7,6 +7,7 @@ import { FaCaretRight } from "react-icons/fa";
 import { useSelector } from 'react-redux'
 import AddToCartButton from './AddToCartButton'
 import { pricewithDiscount } from '../utils/PriceWithDiscount'
+import SlideToProceed from './SlideToProceed'
 import imageEmpty from '../assets/empty_cart.webp'
 import toast from 'react-hot-toast'
 
@@ -114,16 +115,11 @@ const DisplayCartItem = ({close}) => {
 
             {
                 cartItem[0] && (
-                    <div className='p-2'>
-                        <div className='bg-green-700 text-neutral-100 px-4 font-bold text-base py-4 static bottom-3 rounded flex items-center gap-4 justify-between'>
-                            <div>
-                                {DisplayPriceInRupees(totalPrice)}
-                            </div>
-                            <button onClick={redirectToCheckoutPage} className='flex items-center gap-1'>
-                                Proceed
-                                <span><FaCaretRight/></span>
-                            </button>
-                        </div>
+                    <div className='p-2 bg-white/50 backdrop-blur-sm border-t border-slate-100 absolute bottom-0 w-full left-0'>
+                        <SlideToProceed 
+                            totalPrice={DisplayPriceInRupees(totalPrice)} 
+                            onProceed={redirectToCheckoutPage} 
+                        />
                     </div>
                 )
             }

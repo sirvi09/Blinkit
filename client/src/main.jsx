@@ -7,12 +7,16 @@ import store from "./store/store.js";
 import { Provider } from "react-redux";
 import GlobalProvider from "./provider/GlobalProvider.jsx";
 
+import { HelmetProvider } from "react-helmet-async";
+
 createRoot(document.getElementById("root")).render(
   //<StrictMode>
-  <Provider store={store}>
-    <GlobalProvider>
-      <RouterProvider router={router} />
-    </GlobalProvider>
-  </Provider>,
+  <HelmetProvider>
+    <Provider store={store}>
+      <GlobalProvider>
+        <RouterProvider router={router} />
+      </GlobalProvider>
+    </Provider>
+  </HelmetProvider>
   //</StrictMode>,
 );

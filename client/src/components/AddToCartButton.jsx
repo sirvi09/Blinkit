@@ -31,7 +31,6 @@ const AddToCartButton = ({ data }) => {
 
     if (!user?._id) {
        dispatch(addLocalCartItem(data));
-       toast.success("Item added to cart");
        return;
     }
 
@@ -48,8 +47,6 @@ const AddToCartButton = ({ data }) => {
       const { data: responseData } = response;
 
       if (responseData.success) {
-        toast.success(responseData.message);
-
         if (fetchCartItem) {
           fetchCartItem();
         }
@@ -82,15 +79,10 @@ const AddToCartButton = ({ data }) => {
 
     if (!user?._id) {
        dispatch(updateLocalCartItemQty({ id: cartItemDetails?.id, qty: qty + 1 }));
-       toast.success("Item added");
        return;
     }
 
     const response = await updateCartItem(cartItemDetails?.id, qty + 1);
-
-    if (response?.success) {
-      toast.success("Item added");
-    }
   };
 
   const decreaseQty = async (e) => {
@@ -103,7 +95,6 @@ const AddToCartButton = ({ data }) => {
        } else {
           dispatch(updateLocalCartItemQty({ id: cartItemDetails?.id, qty: qty - 1 }));
        }
-       toast.success("Item removed");
        return;
     }
 
@@ -111,10 +102,6 @@ const AddToCartButton = ({ data }) => {
       deleteCartItem(cartItemDetails?.id);
     } else {
       const response = await updateCartItem(cartItemDetails?.id, qty - 1);
-
-      if (response?.success) {
-        toast.success("Item removed");
-      }
     }
   };
 

@@ -17,9 +17,9 @@ export const addToCartProduct = async(productId,qty)=>{
 
         console.log(responseData)
         if(responseData.success){
-            toast.success(responseData.message)
+            // toast removed
         }
-        return responseData
+        return responseData;
 
     } catch (error) {
         AxiosToastError(error)

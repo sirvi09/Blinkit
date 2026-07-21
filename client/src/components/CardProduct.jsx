@@ -5,6 +5,7 @@ import { valideURLConvert } from '../utils/validURLConvert'
 import { pricewithDiscount } from '../utils/PriceWithDiscount'
 import AddToCartButton from './AddToCartButton'
 import { useGlobalContext } from '../provider/GlobalProvider'
+import StarRating from './StarRating'
 
 const CardProduct = ({ data }) => {
 
@@ -46,12 +47,21 @@ const CardProduct = ({ data }) => {
 
             </div>
 
-            <div className='px-2 lg:px-0 font-medium text-ellipsis text-sm lg:text-base line-clamp-2'>
-                {data?.name}
-            </div>
+            <div className='py-2 flex-col grid gap-1'>
+                <div className='font-semibold text-xs md:text-sm text-ellipsis line-clamp-2'>
+                    {data.name}
+                </div>
 
-            <div className='w-fit gap-1 px-2 lg:px-0 text-sm lg:text-base'>
-                {data?.unit}
+                {Number(data.average_rating) > 0 && (
+                    <div className='flex items-center gap-1'>
+                        <StarRating rating={Number(data.average_rating)} readonly size="sm" />
+                        <span className='text-xs text-neutral-500'>({data.total_reviews})</span>
+                    </div>
+                )}
+
+                <div className='w-fit gap-1 px-2 lg:px-0 text-sm lg:text-sm text-neutral-500'>
+                    {data?.unit}
+                </div>
             </div>
 
             <div className='px-2 lg:px-0 flex items-center justify-between gap-1 lg:gap-3 text-sm lg:text-base'>

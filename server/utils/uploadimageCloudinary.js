@@ -10,7 +10,11 @@ const uploadImageCloudinary = async(image) => {
     const buffer = image?.buffer
 
     const uploadImage = await new Promise((resolve,reject)=>{
-    cloudinary.uploader.upload_stream({ folder : "winkit"},(error,uploadResult)=>{
+    cloudinary.uploader.upload_stream({ 
+        folder : "winkit",
+        resource_type: "image",
+        format: "webp"
+    },(error,uploadResult)=>{
         if(error){
             return reject(error)
         }

@@ -157,6 +157,14 @@ const SummaryApi = {
     url: "/api/dashboard/stats",
     method: "get",
   },
+  addReview: {
+    url: "/api/reviews/add",
+    method: "post",
+  },
+  getReviews: {
+    url: (productId) => `/api/reviews/${productId}`,
+    method: "get",
+  },
 };
 
 export default SummaryApi;

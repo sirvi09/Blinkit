@@ -62,6 +62,8 @@ export const getAllProducts = async (search = "") => {
                     json_agg(pi.image_url) FILTER (WHERE pi.image_url IS NOT NULL),
                     '[]'
                 ) AS image,
+                (SELECT COALESCE(ROUND(AVG(rating), 1), 0) FROM reviews WHERE product_id = p.id) AS average_rating,
+                (SELECT COUNT(*) FROM reviews WHERE product_id = p.id) AS total_reviews,
                 ts_rank(
                     setweight(to_tsvector('english', coalesce(p.name, '')), 'A') ||
                     setweight(to_tsvector('english', coalesce(p.description, '')), 'B'),
@@ -85,7 +87,9 @@ export const getAllProducts = async (search = "") => {
                 COALESCE(
                     json_agg(pi.image_url) FILTER (WHERE pi.image_url IS NOT NULL),
                     '[]'
-                ) AS image
+                ) AS image,
+                (SELECT COALESCE(ROUND(AVG(rating), 1), 0) FROM reviews WHERE product_id = p.id) AS average_rating,
+                (SELECT COUNT(*) FROM reviews WHERE product_id = p.id) AS total_reviews
             FROM products p
             LEFT JOIN product_images pi ON pi.product_id = p.id
             GROUP BY p.id
@@ -105,7 +109,9 @@ export const getProductById = async (id) => {
             COALESCE(
                 json_agg(pi.image_url) FILTER (WHERE pi.image_url IS NOT NULL),
                 '[]'
-            ) AS image
+            ) AS image,
+            (SELECT COALESCE(ROUND(AVG(rating), 1), 0) FROM reviews WHERE product_id = p.id) AS average_rating,
+            (SELECT COUNT(*) FROM reviews WHERE product_id = p.id) AS total_reviews
         FROM products p
         LEFT JOIN product_images pi ON pi.product_id = p.id
         WHERE p.id = $1
