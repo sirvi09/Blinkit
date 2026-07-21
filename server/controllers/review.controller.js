@@ -1,4 +1,5 @@
 import { pool } from "../config/connectDB.js";
+import logger from "../config/logger.js";
 
 export const addReviewController = async (req, res) => {
   try {
@@ -38,7 +39,7 @@ export const addReviewController = async (req, res) => {
       success: true,
     });
   } catch (error) {
-    console.error("Add Review Error:", error);
+    logger.error("Add Review Error:", { error: error.message });
     return res.status(500).json({
       message: "Internal server error",
       error: true,
@@ -66,7 +67,7 @@ export const getProductReviewsController = async (req, res) => {
       success: true,
     });
   } catch (error) {
-    console.error("Get Reviews Error:", error);
+    logger.error("Get Reviews Error:", { error: error.message });
     return res.status(500).json({
       message: "Internal server error",
       error: true,

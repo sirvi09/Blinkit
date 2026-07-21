@@ -1,4 +1,5 @@
 import { pool } from "../config/connectDB.js";
+import logger from "../config/logger.js";
 
 export const createProductController = async (req, res) => {
   try {
@@ -248,7 +249,7 @@ export const getProductByCategoryAndSubCategory = async (req, res) => {
 
   } catch (error) {
 
-    console.log("CATEGORY PRODUCT ERROR", error);
+    logger.error("CATEGORY PRODUCT ERROR", { error: error.message });
 
     return res.status(500).json({
       message: error.message || error,

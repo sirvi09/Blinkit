@@ -4,6 +4,7 @@ import { getOrdersByUser } from "../models/order.model.js";
 import { io } from "../index.js";
 import { findUserById } from "../models/user.model.js";
 import { getProductById } from "../models/product.model.js";
+import logger from "../config/logger.js";
 
 export const pricewithDiscount = (price, dis = 1) => {
   const discountAmount = Math.ceil((Number(price) * Number(dis)) / 100);
@@ -70,7 +71,7 @@ export async function CashOnDeliveryOrderController(req, res) {
     });
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error("COD error:", error, error.stack);
+    logger.error("COD error:", { error: error.message, stack: error.stack });
     return res.status(500).json({
       message: error.message || "Order failed to process",
       error: true,
@@ -84,6 +85,10 @@ export async function CashOnDeliveryOrderController(req, res) {
 
 export async function paymentController(req, res) {
   try {
+    if (!Stripe) {
+        return res.status(500).json({ message: "Stripe is not configured on the server", error: true, success: false });
+    }
+
     const userId = req.userId;
     const { list_items, addressId } = req.body;
 
@@ -136,7 +141,7 @@ export async function paymentController(req, res) {
 
     return res.status(200).json(session);
   } catch (error) {
-    console.error("Payment setup error:", error, error.stack);
+    logger.error("Payment setup error:", { error: error.message, stack: error.stack });
     return res.status(500).json({
       message: error.message || "Failed to initialize payment",
       error: true,
@@ -183,13 +188,17 @@ const getOrderProductItems = async ({
 
 
 export async function webhookStripe(req, res) {
+  if (!Stripe) {
+      return res.status(500).send("Stripe is not configured");
+  }
+
   const sig = req.headers['stripe-signature'];
   let event;
 
   try {
     event = Stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
-    console.error(`Webhook Error: ${err.message}`);
+    logger.error(`Webhook Error: ${err.message}`);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
@@ -230,10 +239,10 @@ export async function webhookStripe(req, res) {
       
       await client.query('COMMIT');
       io.emit("dashboard-updated");
-      console.log("Stripe order processed successfully");
+      logger.info("Stripe order processed successfully");
     } catch (error) {
       await client.query('ROLLBACK');
-      console.error("Webhook transaction failed:", error);
+      logger.error("Webhook transaction failed:", { error: error.message });
     } finally {
       client.release();
     }
@@ -255,7 +264,7 @@ export async function getOrderDetailsController(req, res) {
       success: true,
     });
   } catch (error) {
-    console.error("Order details error:", error);
+    logger.error("Order details error:", { error: error.message });
     return res.status(500).json({
       message: "Internal server error",
       error: true,
