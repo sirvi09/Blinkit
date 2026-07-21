@@ -28,7 +28,7 @@ export async function CashOnDeliveryOrderController(req, res) {
       const productId = item?.productId?.id || item?.productId?._id || item?.productId || item?.product_id;
       const product = await getProductById(productId);
       if(!product) {
-          throw new Error(`Product not found: ${productId}`);
+          continue;
       }
 
       const itemPrice = pricewithDiscount(product.price, product.discount);
